@@ -7,6 +7,7 @@ import json
 from typing import Optional
 from aiohttp import web
 import asyncio
+from threading import Thread
 
 # Load environment variables
 load_dotenv()
@@ -336,16 +337,18 @@ async def infractions_clear(interaction: discord.Interaction, user: discord.Memb
 async def health_check(request):
     return web.Response(text="Bot is running", status=200)
 
-async def start_http_server():
+def run_http_server():
     port = int(os.getenv('PORT', 10000))
     app = web.Application()
     app.add_routes([web.get('/', health_check)])
     runner = web.AppRunner(app)
-    await runner.setup()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(runner.setup())
     site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
+    loop.run_until_complete(site.start())
     print(f'HTTP server started on port {port}')
-    return runner
+    loop.run_forever()
 
 # Run the bot
 async def main():
@@ -354,19 +357,15 @@ async def main():
         print('Please create a .env file with your bot token.')
         return
     
-    # Start HTTP server for health checks
-    runner = await start_http_server()
+    # Start HTTP server in separate thread
+    http_thread = Thread(target=run_http_server, daemon=False)
+    http_thread.start()
     
-    # Start Discord bot in background
-    bot_task = asyncio.create_task(bot.start(TOKEN))
+    # Wait for HTTP server to start
+    await asyncio.sleep(2)
     
-    # Keep the event loop alive
-    try:
-        while True:
-            await asyncio.sleep(3600)
-    except asyncio.CancelledError:
-        await bot.close()
-        await runner.cleanup()
+    # Start Discord bot
+    await bot.start(TOKEN)
 
 if __name__ == '__main__':
     asyncio.run(main())
