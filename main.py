@@ -357,8 +357,16 @@ async def main():
     # Start HTTP server for health checks
     runner = await start_http_server()
     
-    # Start Discord bot
-    await bot.start(TOKEN)
+    # Start Discord bot in background
+    bot_task = asyncio.create_task(bot.start(TOKEN))
+    
+    # Keep the event loop alive
+    try:
+        while True:
+            await asyncio.sleep(3600)
+    except asyncio.CancelledError:
+        await bot.close()
+        await runner.cleanup()
 
 if __name__ == '__main__':
     asyncio.run(main())
