@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 import json
 from typing import Optional
+from aiohttp import web
+import asyncio
 
 # Load environment variables
 load_dotenv()
@@ -330,10 +332,33 @@ async def infractions_clear(interaction: discord.Interaction, user: discord.Memb
     else:
         await interaction.response.send_message(f'{user.mention} has no infractions to clear.', ephemeral=True)
 
+# HTTP Server for health checks
+async def health_check(request):
+    return web.Response(text="Bot is running", status=200)
+
+async def start_http_server():
+    port = int(os.getenv('PORT', 10000))
+    app = web.Application()
+    app.add_routes([web.get('/', health_check)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    print(f'HTTP server started on port {port}')
+    return runner
+
 # Run the bot
-if __name__ == '__main__':
+async def main():
     if not TOKEN:
         print('Error: DISCORD_TOKEN not found in environment variables.')
         print('Please create a .env file with your bot token.')
-    else:
-        bot.run(TOKEN)
+        return
+    
+    # Start HTTP server for health checks
+    runner = await start_http_server()
+    
+    # Start Discord bot
+    await bot.start(TOKEN)
+
+if __name__ == '__main__':
+    asyncio.run(main())
