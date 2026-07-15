@@ -17,6 +17,8 @@ GUILD_ID = int(os.getenv('GUILD_ID', 0))
 SESSIONS_ROLE_ID = int(os.getenv('SESSIONS_ROLE_ID', 0))
 STAFF_TEAM_ROLE_ID = int(os.getenv('STAFF_TEAM_ROLE_ID', 0))
 INTERNAL_AFFAIRS_ROLE_ID = int(os.getenv('INTERNAL_AFFAIRS_ROLE_ID', 0))
+PROFILE_PICTURE_URL = os.getenv('PROFILE_PICTURE_URL', 'https://cdn.discordapp.com/attachments/1521644813752078386/1526592590546468914/SFRP.webp?ex=6a58e724&is=6a5795a4&hm=03434e1b429bddf366e380aa01de69bd955d7d8bf26754b1a7cf848c8613a8ae&')
+BANNER_URL = os.getenv('BANNER_URL', 'https://cdn.discordapp.com/attachments/1521644813752078386/1526592591049523271/content.png?ex=6a58e724&is=6a5795a4&hm=43fa37e89e69e4eca2bd435f38c9c1006de2a029200a3d484f28ece4602afb53&')
 
 # Bot setup
 intents = discord.Intents.default()
@@ -78,17 +80,10 @@ async def on_ready():
         except Exception as e2:
             print(f'Error syncing commands globally: {e2}')
 
-# Session Commands
-@bot.tree.command(name='session', description='Session management commands')
-@app_commands.describe(action='The session action to perform')
-@app_commands.choices(action=[
-    app_commands.Choice(name='start', value='start'),
-    app_commands.Choice(name='end', value='end'),
-    app_commands.Choice(name='boost', value='boost'),
-    app_commands.Choice(name='vote', value='vote'),
-])
-async def session(interaction: discord.Interaction, action: str):
-    """Session management commands (IA+ only)"""
+# Session Commands (IA+ only)
+@bot.tree.command(name='session_start', description='Start a session')
+async def session_start(interaction: discord.Interaction):
+    """Start a session (IA+ only)"""
     if not has_ia_permission(interaction):
         await interaction.response.send_message('You do not have permission to use this command. Only Internal Affairs and Administrators can use session commands.', ephemeral=True)
         return
@@ -97,77 +92,102 @@ async def session(interaction: discord.Interaction, action: str):
     sessions_role = guild.get_role(SESSIONS_ROLE_ID) if SESSIONS_ROLE_ID else None
     staff_role = guild.get_role(STAFF_TEAM_ROLE_ID) if STAFF_TEAM_ROLE_ID else None
 
-    if action == 'start':
-        embed = discord.Embed(
-            title='🚀 Session Started',
-            description='A Session has begun by the Springfield Roleplay Community HR\'s. Join up!',
-            color=discord.Color.green()
-        )
-        embed.add_field(name='Server Code', value='sfrpj', inline=False)
-        embed.set_footer(text='Springfield Roleplay Community')
-        embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
-        
-        mentions = []
-        if sessions_role:
-            mentions.append(sessions_role.mention)
-        if staff_role:
-            mentions.append(staff_role.mention)
-        
-        mention_text = ' '.join(mentions) if mentions else ''
-        await interaction.response.send_message(f'{mention_text}', embed=embed)
+    embed = discord.Embed(
+        title='🚀 Session Started',
+        description="A Session has begun by the Springfield Roleplay Community HR's. Join up!",
+        color=discord.Color.green()
+    )
+    embed.add_field(name='Server Code', value='sfrpj', inline=False)
+    embed.set_footer(text='Springfield Roleplay Community')
+    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else PROFILE_PICTURE_URL)
+    
+    mentions = []
+    if sessions_role:
+        mentions.append(sessions_role.mention)
+    if staff_role:
+        mentions.append(staff_role.mention)
+    
+    mention_text = ' '.join(mentions) if mentions else ''
+    await interaction.response.send_message(f'{mention_text}', embed=embed)
 
-    elif action == 'end':
-        embed = discord.Embed(
-            title='🔴 Session Ended',
-            description='The server is now shutdown. Do not join In-Game or you will be moderated.',
-            color=discord.Color.red()
-        )
-        embed.set_footer(text='Springfield Roleplay Community')
-        embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
-        
-        await interaction.response.send_message(embed=embed)
+@bot.tree.command(name='session_end', description='End a session')
+async def session_end(interaction: discord.Interaction):
+    """End a session (IA+ only)"""
+    if not has_ia_permission(interaction):
+        await interaction.response.send_message('You do not have permission to use this command. Only Internal Affairs and Administrators can use session commands.', ephemeral=True)
+        return
 
-    elif action == 'boost':
-        embed = discord.Embed(
-            title='⚡ Session Boost',
-            description='A Session Boost has begun. We are low players. Join up!',
-            color=discord.Color.gold()
-        )
-        embed.set_footer(text='Springfield Roleplay Community')
-        embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
-        
-        mentions = []
-        if sessions_role:
-            mentions.append(sessions_role.mention)
-        if staff_role:
-            mentions.append(staff_role.mention)
-        
-        mention_text = ' '.join(mentions) if mentions else ''
-        await interaction.response.send_message(f'{mention_text}', embed=embed)
+    embed = discord.Embed(
+        title='🔴 Session Ended',
+        description='The server is now shutdown. Do not join In-Game or you will be moderated.',
+        color=discord.Color.red()
+    )
+    embed.set_footer(text='Springfield Roleplay Community')
+    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else PROFILE_PICTURE_URL)
+    
+    await interaction.response.send_message(embed=embed)
 
-    elif action == 'vote':
-        embed = discord.Embed(
-            title='🗳️ Session Vote',
-            description='A Session is being initiated. Vote if you will join In-Game.',
-            color=discord.Color.blue()
-        )
-        embed.add_field(name='Instructions', value='React with ✅ if you will join, ❌ if you cannot.', inline=False)
-        embed.set_footer(text='Springfield Roleplay Community')
-        embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
-        
-        mentions = []
-        if sessions_role:
-            mentions.append(sessions_role.mention)
-        if staff_role:
-            mentions.append(staff_role.mention)
-        
-        mention_text = ' '.join(mentions) if mentions else ''
-        message = await interaction.response.send_message(f'{mention_text}', embed=embed)
-        
-        # Add reactions
-        message = await interaction.original_response()
-        await message.add_reaction('✅')
-        await message.add_reaction('❌')
+@bot.tree.command(name='sessions_boost', description='Boost a session')
+async def sessions_boost(interaction: discord.Interaction):
+    """Boost a session (IA+ only)"""
+    if not has_ia_permission(interaction):
+        await interaction.response.send_message('You do not have permission to use this command. Only Internal Affairs and Administrators can use session commands.', ephemeral=True)
+        return
+
+    guild = interaction.guild
+    sessions_role = guild.get_role(SESSIONS_ROLE_ID) if SESSIONS_ROLE_ID else None
+    staff_role = guild.get_role(STAFF_TEAM_ROLE_ID) if STAFF_TEAM_ROLE_ID else None
+
+    embed = discord.Embed(
+        title='⚡ Session Boost',
+        description='A Session Boost has begun. We are low players. Join up!',
+        color=discord.Color.gold()
+    )
+    embed.set_footer(text='Springfield Roleplay Community')
+    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else PROFILE_PICTURE_URL)
+    
+    mentions = []
+    if sessions_role:
+        mentions.append(sessions_role.mention)
+    if staff_role:
+        mentions.append(staff_role.mention)
+    
+    mention_text = ' '.join(mentions) if mentions else ''
+    await interaction.response.send_message(f'{mention_text}', embed=embed)
+
+@bot.tree.command(name='session_vote', description='Initiate a session vote')
+async def session_vote(interaction: discord.Interaction):
+    """Initiate a session vote (IA+ only)"""
+    if not has_ia_permission(interaction):
+        await interaction.response.send_message('You do not have permission to use this command. Only Internal Affairs and Administrators can use session commands.', ephemeral=True)
+        return
+
+    guild = interaction.guild
+    sessions_role = guild.get_role(SESSIONS_ROLE_ID) if SESSIONS_ROLE_ID else None
+    staff_role = guild.get_role(STAFF_TEAM_ROLE_ID) if STAFF_TEAM_ROLE_ID else None
+
+    embed = discord.Embed(
+        title='🗳️ Session Vote',
+        description='A Session is being initiated. Vote if you will join In-Game.',
+        color=discord.Color.blue()
+    )
+    embed.add_field(name='Instructions', value='React with ✅ if you will join, ❌ if you cannot.', inline=False)
+    embed.set_footer(text='Springfield Roleplay Community')
+    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else PROFILE_PICTURE_URL)
+    
+    mentions = []
+    if sessions_role:
+        mentions.append(sessions_role.mention)
+    if staff_role:
+        mentions.append(staff_role.mention)
+    
+    mention_text = ' '.join(mentions) if mentions else ''
+    message = await interaction.response.send_message(f'{mention_text}', embed=embed)
+    
+    # Add reactions
+    message = await interaction.original_response()
+    await message.add_reaction('✅')
+    await message.add_reaction('❌')
 
 # Admin Commands
 @bot.tree.command(name='promotion_issue', description='Issue a promotion')
@@ -188,7 +208,7 @@ async def promotion_issue(interaction: discord.Interaction, staff_member: discor
     if notes:
         embed.add_field(name='Notes', value=notes, inline=False)
     embed.set_footer(text='Springfield Roleplay Community')
-    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
+    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else PROFILE_PICTURE_URL)
     embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
 
     await interaction.response.send_message(embed=embed)
@@ -256,7 +276,7 @@ async def infraction_issue(interaction: discord.Interaction, staff_member: disco
     if notes:
         embed.add_field(name='Notes', value=notes, inline=False)
     embed.set_footer(text='Springfield Roleplay Community')
-    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
+    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else PROFILE_PICTURE_URL)
     embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
 
     await interaction.response.send_message(embed=embed)
@@ -279,7 +299,7 @@ async def say(interaction: discord.Interaction, message: str):
 
     await interaction.response.send_message(message)
 
-@bot.tree.command(name='infractions_check', description='Check a user\'s infraction history')
+@bot.tree.command(name='infractions_check', description="Check a user's infraction history")
 @app_commands.describe(user='The user to check')
 async def infractions_check(interaction: discord.Interaction, user: discord.Member):
     """Check a user's infraction history"""
@@ -302,7 +322,7 @@ async def infractions_check(interaction: discord.Interaction, user: discord.Memb
     
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name='infractions_clear', description='Clear a user\'s infraction record')
+@bot.tree.command(name='infractions_clear', description='Clear a user infraction record')
 @app_commands.describe(user='The user to clear infractions for')
 async def infractions_clear(interaction: discord.Interaction, user: discord.Member):
     """Clear a user's infraction record (Admin only)"""
