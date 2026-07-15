@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: springfield-discord-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: GUILD_ID
+        sync: false
+      - key: SESSIONS_ROLE_ID
+        sync: false
+      - key: STAFF_TEAM_ROLE_ID
+        sync: false
+      - key: INTERNAL_AFFAIRS_ROLE_ID
+        sync: false
