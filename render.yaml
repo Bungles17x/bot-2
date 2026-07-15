@@ -15,3 +15,5 @@ services:
         sync: false
       - key: INTERNAL_AFFAIRS_ROLE_ID
         sync: false
+      - key: PORT
+        value: 10000
